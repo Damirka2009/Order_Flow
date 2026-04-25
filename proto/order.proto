@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+import "google/protobuf/field_mask.proto";
+
+option go_package = "pkg/api";
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (OrderResponse);
+  rpc GetOrder(GetOrderRequest) returns (OrderResponse);
+  rpc UpdateOrder(UpdateOrderRequest) returns (OrderResponse);
+  rpc DeleteOrder(DeleteOrderRequest) returns (Empty);
+  rpc OrdersList(Empty) returns (OrdersListResponse);
+}
+
+message Empty {}
+
+message Order {
+  string id = 1;
+  string item = 2;
+  string category = 3;
+  string currency = 4;
+  int64 price = 5;
+  int32 quantity = 6;
+  bool is_stock = 7;
+}
+
+message CreateOrderRequest {
+  string item = 1;
+  string category = 2;
+  string currency = 3;
+  int64 price = 4;
+  int32 quantity = 5;
+  bool is_stock = 6;
+}
+
+message GetOrderRequest {
+  string id = 1;
+}
+
+message UpdateOrderRequest {
+  string id = 1;
+  Order order = 2;
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+message DeleteOrderRequest {
+  string id = 1;
+}
+
+message OrderResponse {
+  Order order = 1;
+}
+
+message OrdersListResponse {
+  repeated Order orders = 1;
+}
