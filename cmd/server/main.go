@@ -3,6 +3,10 @@ package main
 import (
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"google.golang.org/grpc"
 
@@ -26,8 +30,33 @@ func main() {
 	handler := grpcHandler.New(svc)
 
 	server := grpc.NewServer()
-
 	api.RegisterOrderServiceServer(server, handler)
-	log.Println("gRPC started on ", cfg.GRPCPort)
-	server.Serve(lis)
+
+	go func() {
+		log.Println("gRPC started on", cfg.GRPCPort)
+		if err := server.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: ")
+		}
+	}()
+
+	// Graceful Shutdown
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	<-stop
+	log.Println("Shutting down....")
+
+	done := make(chan struct{})
+
+	go func() {
+		server.GracefulStop()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		log.Println("Server stopped gracefully")
+	case <-time.After(3 * time.Second):
+		server.Stop()
+	}
 }

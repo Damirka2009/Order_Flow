@@ -17,7 +17,7 @@ type OrderService struct {
 }
 
 func New(repo *repository.OrdersRepository) *OrderService {
-	return &OrderService{}
+	return &OrderService{repo: repo}
 }
 
 func (s *OrderService) Create(item, category, currency string, price int64, quantity int32) *domain.Order {
@@ -85,5 +85,5 @@ func (s *OrderService) Delete(id string) {
 }
 
 func (s *OrderService) List() []*domain.Order {
-	return s.List()
+	return s.repo.List()
 }
