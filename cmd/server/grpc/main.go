@@ -35,8 +35,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	connInv, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	inventoryClient := api.NewInventoryServiceClient(connInv)
+
 	repo := repository.New(pool)
-	svc := service.New(repo)
+	svc := service.New(repo, inventoryClient)
 	handler := grpcHandler.New(svc)
 
 	server := grpc.NewServer()

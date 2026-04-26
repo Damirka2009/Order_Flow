@@ -40,8 +40,10 @@ func main() {
 	}
 
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
+		Addr:         ":8080",
+		Handler:      mux,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
 	}
 
 	go func() {

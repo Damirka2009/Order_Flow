@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"master/internal/domain"
 	"master/internal/repository"
+	"time"
+
+	api "master/pkg/api"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -14,14 +17,27 @@ import (
 )
 
 type OrderService struct {
-	repo *repository.OrdersRepository
+	repo            *repository.OrdersRepository
+	inventoryClient api.InventoryServiceClient
 }
 
-func New(repo *repository.OrdersRepository) *OrderService {
-	return &OrderService{repo: repo}
+func New(repo *repository.OrdersRepository, inv api.InventoryServiceClient) *OrderService {
+	return &OrderService{
+		repo:            repo,
+		inventoryClient: inv,
+	}
 }
 
 func (s *OrderService) Create(ctx context.Context, item, category, currency string, price int64, quantity int32) *domain.Order {
+	resp, err := s.inventoryClient.CheckStock(ctx, &api.CheckStockRequest{
+		Item:     item,
+		Quantity: quantity,
+	})
+
+	if err != nil || !resp.Available {
+		return &domain.Order{}
+	}
+
 	var is_stock bool
 	if quantity > 0 {
 		is_stock = true
@@ -37,22 +53,44 @@ func (s *OrderService) Create(ctx context.Context, item, category, currency stri
 		Quantity: quantity,
 		Is_stock: is_stock,
 	}
-	s.repo.Save(ctx, &newOrder)
+	err = withRetry(ctx, 2, func() error {
+		return s.repo.Save(ctx, &newOrder)
+	})
+
+	_, _ = s.inventoryClient.DecreaseStock(ctx, &api.DecreaseStockRequest{
+		Item:     item,
+		Quantity: quantity,
+	})
+
+	if err != nil {
+		return &domain.Order{}
+	}
 	return &newOrder
 }
 
 func (s *OrderService) Get(ctx context.Context, id string) (*domain.Order, error) {
-	order, ok := s.repo.Get(ctx, id)
-	if !ok {
-		return &domain.Order{}, status.Error(codes.NotFound, "order not found")
+	var order *domain.Order
+
+	err := withRetry(ctx, 2, func() error {
+		var innerOk bool
+		order, innerOk = s.repo.Get(ctx, id)
+		if !innerOk {
+			return fmt.Errorf("not found")
+		}
+		return nil
+	})
+
+	if err != nil {
+		return &domain.Order{}, status.Error(codes.NotFound, "fallback: order not available")
 	}
+
 	return order, nil
 }
 
 func (s *OrderService) Update(ctx context.Context, id string, incoming *domain.Order, mask *fieldmaskpb.FieldMask) (*domain.Order, error) {
 	existing, ok := s.repo.Get(ctx, id)
 	if !ok {
-		return &domain.Order{}, errors.New("order not found")
+		return &domain.Order{}, fmt.Errorf("fallback: update failed")
 	}
 
 	if mask == nil || len(mask.Paths) == 0 {
@@ -82,9 +120,44 @@ func (s *OrderService) Update(ctx context.Context, id string, incoming *domain.O
 }
 
 func (s *OrderService) Delete(ctx context.Context, id string) {
-	s.repo.Delete(ctx, id)
+	_ = withRetry(ctx, 2, func() error {
+		return s.repo.Delete(ctx, id)
+	})
 }
 
 func (s *OrderService) List(ctx context.Context) []*domain.Order {
-	return s.repo.List(ctx)
+	var orders []*domain.Order
+
+	err := withRetry(ctx, 2, func() error {
+		orders = s.repo.List(ctx)
+		if orders == nil {
+			return fmt.Errorf("failed")
+		}
+		return nil
+	})
+
+	if err != nil {
+		return []*domain.Order{}
+	}
+
+	return orders
+}
+
+func withRetry(ctx context.Context, attempts int, fn func() error) error {
+	var err error
+
+	for i := 0; i < attempts; i++ {
+		_, cancel := context.WithTimeout(ctx, 2*time.Second)
+
+		err = fn()
+		cancel()
+
+		if err == nil {
+			return nil
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	return err
 }

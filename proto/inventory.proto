@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+option go_package = "pkg/api";
+
+service InventoryService {
+  rpc CheckStock(CheckStockRequest) returns (CheckStockResponse);
+  rpc DecreaseStock(DecreaseStockRequest) returns (google.protobuf.Empty);
+}
+
+message CheckStockRequest {
+  string item = 1;
+  int32 quantity = 2;
+}
+
+message CheckStockResponse {
+  bool available = 1;
+}
+
+message DecreaseStockRequest {
+  string item = 1;
+  int32 quantity = 2;
+}
