@@ -5,6 +5,8 @@ import (
 
 	"master/internal/inventory"
 	api "master/pkg/api"
+
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type Handler struct {
@@ -24,7 +26,7 @@ func (h *Handler) CheckStock(ctx context.Context, req *api.CheckStockRequest) (*
 	}, nil
 }
 
-func (h *Handler) DecreaseStock(ctx context.Context, req *api.DecreaseStockRequest) (*api.Empty, error) {
+func (h *Handler) DecreaseStock(ctx context.Context, req *api.DecreaseStockRequest) (*emptypb.Empty, error) {
 	h.svc.DecreaseStock(ctx, req.Item, req.Quantity)
-	return &api.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
