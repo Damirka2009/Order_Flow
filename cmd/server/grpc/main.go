@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 
 	"master/internal/config"
+	"master/internal/db"
 	"master/internal/repository"
 	"master/internal/service"
 
@@ -20,12 +22,20 @@ import (
 
 func main() {
 	cfg := config.Load()
+	ctx := context.Background()
+
+	pool, err := db.NewDB(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer pool.Close(ctx)
+
 	lis, err := net.Listen("tcp", ":"+cfg.GRPCPort)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	repo := repository.New()
+	repo := repository.New(pool)
 	svc := service.New(repo)
 	handler := grpcHandler.New(svc)
 

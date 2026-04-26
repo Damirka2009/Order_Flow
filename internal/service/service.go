@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"master/internal/domain"
@@ -20,7 +21,7 @@ func New(repo *repository.OrdersRepository) *OrderService {
 	return &OrderService{repo: repo}
 }
 
-func (s *OrderService) Create(item, category, currency string, price int64, quantity int32) *domain.Order {
+func (s *OrderService) Create(ctx context.Context, item, category, currency string, price int64, quantity int32) *domain.Order {
 	var is_stock bool
 	if quantity > 0 {
 		is_stock = true
@@ -36,20 +37,20 @@ func (s *OrderService) Create(item, category, currency string, price int64, quan
 		Quantity: quantity,
 		Is_stock: is_stock,
 	}
-	s.repo.Save(&newOrder)
+	s.repo.Save(ctx, &newOrder)
 	return &newOrder
 }
 
-func (s *OrderService) Get(id string) (*domain.Order, error) {
-	order, ok := s.repo.Get(id)
+func (s *OrderService) Get(ctx context.Context, id string) (*domain.Order, error) {
+	order, ok := s.repo.Get(ctx, id)
 	if !ok {
 		return &domain.Order{}, status.Error(codes.NotFound, "order not found")
 	}
 	return order, nil
 }
 
-func (s *OrderService) Update(id string, incoming *domain.Order, mask *fieldmaskpb.FieldMask) (*domain.Order, error) {
-	existing, ok := s.repo.Get(id)
+func (s *OrderService) Update(ctx context.Context, id string, incoming *domain.Order, mask *fieldmaskpb.FieldMask) (*domain.Order, error) {
+	existing, ok := s.repo.Get(ctx, id)
 	if !ok {
 		return &domain.Order{}, errors.New("order not found")
 	}
@@ -76,14 +77,14 @@ func (s *OrderService) Update(id string, incoming *domain.Order, mask *fieldmask
 			return nil, fmt.Errorf("unknown field: %s", path)
 		}
 	}
-	s.repo.Update(existing)
+	s.repo.Update(ctx, existing)
 	return existing, nil
 }
 
-func (s *OrderService) Delete(id string) {
-	s.repo.Delete(id)
+func (s *OrderService) Delete(ctx context.Context, id string) {
+	s.repo.Delete(ctx, id)
 }
 
-func (s *OrderService) List() []*domain.Order {
-	return s.repo.List()
+func (s *OrderService) List(ctx context.Context) []*domain.Order {
+	return s.repo.List(ctx)
 }

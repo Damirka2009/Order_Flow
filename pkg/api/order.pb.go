@@ -7,6 +7,7 @@
 package api
 
 import (
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -474,7 +475,7 @@ var File_proto_order_proto protoreflect.FileDescriptor
 
 const file_proto_order_proto_rawDesc = "" +
 	"\n" +
-	"\x11proto/order.proto\x1a google/protobuf/field_mask.proto\"\a\n" +
+	"\x11proto/order.proto\x1a google/protobuf/field_mask.proto\x1a\x1cgoogle/api/annotations.proto\"\a\n" +
 	"\x05Empty\"\xb0\x01\n" +
 	"\x05Order\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
@@ -503,14 +504,16 @@ const file_proto_order_proto_rawDesc = "" +
 	"\rOrderResponse\x12\x1c\n" +
 	"\x05order\x18\x01 \x01(\v2\x06.OrderR\x05order\"4\n" +
 	"\x12OrdersListResponse\x12\x1e\n" +
-	"\x06orders\x18\x01 \x03(\v2\x06.OrderR\x06orders2\xfb\x01\n" +
-	"\fOrderService\x122\n" +
-	"\vCreateOrder\x12\x13.CreateOrderRequest\x1a\x0e.OrderResponse\x12,\n" +
-	"\bGetOrder\x12\x10.GetOrderRequest\x1a\x0e.OrderResponse\x122\n" +
-	"\vUpdateOrder\x12\x13.UpdateOrderRequest\x1a\x0e.OrderResponse\x12*\n" +
-	"\vDeleteOrder\x12\x13.DeleteOrderRequest\x1a\x06.Empty\x12)\n" +
+	"\x06orders\x18\x01 \x03(\v2\x06.OrderR\x06orders2\xf4\x02\n" +
+	"\fOrderService\x12I\n" +
+	"\vCreateOrder\x12\x13.CreateOrderRequest\x1a\x0e.OrderResponse\"\x15\x82\xd3\xe4\x93\x02\x0f:\x01*\"\n" +
+	"/v1/orders\x12E\n" +
+	"\bGetOrder\x12\x10.GetOrderRequest\x1a\x0e.OrderResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/v1/orders/{id}\x12N\n" +
+	"\vUpdateOrder\x12\x13.UpdateOrderRequest\x1a\x0e.OrderResponse\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*2\x0f/v1/orders/{id}\x12C\n" +
+	"\vDeleteOrder\x12\x13.DeleteOrderRequest\x1a\x06.Empty\"\x17\x82\xd3\xe4\x93\x02\x11*\x0f/v1/orders/{id}\x12=\n" +
 	"\n" +
-	"OrdersList\x12\x06.Empty\x1a\x13.OrdersListResponseB\tZ\apkg/apib\x06proto3"
+	"OrdersList\x12\x06.Empty\x1a\x13.OrdersListResponse\"\x12\x82\xd3\xe4\x93\x02\f\x12\n" +
+	"/v1/ordersB\tZ\apkg/apib\x06proto3"
 
 var (
 	file_proto_order_proto_rawDescOnce sync.Once

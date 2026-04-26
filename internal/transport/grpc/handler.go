@@ -22,6 +22,7 @@ func New(svc *service.OrderService) *Handler {
 
 func (h *Handler) CreateOrder(ctx context.Context, req *api.CreateOrderRequest) (*api.OrderResponse, error) {
 	order := h.svc.Create(
+		ctx,
 		req.Item,
 		req.Category,
 		req.Currency,
@@ -43,7 +44,7 @@ func (h *Handler) CreateOrder(ctx context.Context, req *api.CreateOrderRequest) 
 }
 
 func (h *Handler) GetOrder(ctx context.Context, req *api.GetOrderRequest) (*api.OrderResponse, error) {
-	order, err := h.svc.Get(req.Id)
+	order, err := h.svc.Get(ctx, req.Id)
 	if err != nil {
 		return &api.OrderResponse{}, err
 	}
@@ -70,7 +71,7 @@ func (h *Handler) UpdateOrder(ctx context.Context, req *api.UpdateOrderRequest) 
 		Quantity: req.Order.Quantity,
 		Is_stock: req.Order.IsStock,
 	}
-	order, err := h.svc.Update(req.Id, incoming, req.UpdateMask)
+	order, err := h.svc.Update(ctx, req.Id, incoming, req.UpdateMask)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -89,12 +90,12 @@ func (h *Handler) UpdateOrder(ctx context.Context, req *api.UpdateOrderRequest) 
 }
 
 func (h *Handler) DeleteOrder(ctx context.Context, req *api.DeleteOrderRequest) (*api.Empty, error) {
-	h.svc.Delete(req.Id)
+	h.svc.Delete(ctx, req.Id)
 	return &api.Empty{}, nil
 }
 
 func (h *Handler) OrdersList(ctx context.Context, _ *api.Empty) (*api.OrdersListResponse, error) {
-	orders := h.svc.List()
+	orders := h.svc.List(ctx)
 
 	var pbOrders []*api.Order
 

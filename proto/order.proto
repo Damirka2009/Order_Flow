@@ -1,15 +1,38 @@
 syntax = "proto3";
 
 import "google/protobuf/field_mask.proto";
+import "google/api/annotations.proto";
 
 option go_package = "pkg/api";
 
 service OrderService {
-  rpc CreateOrder(CreateOrderRequest) returns (OrderResponse);
-  rpc GetOrder(GetOrderRequest) returns (OrderResponse);
-  rpc UpdateOrder(UpdateOrderRequest) returns (OrderResponse);
-  rpc DeleteOrder(DeleteOrderRequest) returns (Empty);
-  rpc OrdersList(Empty) returns (OrdersListResponse);
+  rpc CreateOrder(CreateOrderRequest) returns (OrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/orders"
+      body: "*"
+    };
+  };
+  rpc GetOrder(GetOrderRequest) returns (OrderResponse) {
+    option (google.api.http) = { 
+      get: "/v1/orders/{id}"
+    };
+  };
+  rpc UpdateOrder(UpdateOrderRequest) returns (OrderResponse) {
+    option (google.api.http) = {
+      patch: "/v1/orders/{id}"
+      body: "*"
+    };
+  };
+  rpc DeleteOrder(DeleteOrderRequest) returns (Empty) {
+    option (google.api.http) = {
+      delete: "/v1/orders/{id}"
+    };
+  };
+  rpc OrdersList(Empty) returns (OrdersListResponse) {
+    option (google.api.http) = {
+      get: "/v1/orders"
+    };
+  };
 }
 
 message Empty {}
@@ -54,3 +77,4 @@ message OrderResponse {
 message OrdersListResponse {
   repeated Order orders = 1;
 }
+

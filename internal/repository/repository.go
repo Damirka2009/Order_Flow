@@ -1,54 +1,124 @@
 package repository
 
 import (
+	"context"
 	"master/internal/domain"
-	"sync"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type OrdersRepository struct {
-	mu     sync.RWMutex
-	orders map[string]*domain.Order
+	db *pgx.Conn
 }
 
-func New() *OrdersRepository {
+func New(db *pgx.Conn) *OrdersRepository {
 	return &OrdersRepository{
-		orders: make(map[string]*domain.Order),
+		db: db,
 	}
 }
 
-func (r *OrdersRepository) Save(order *domain.Order) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.orders[order.Id] = order
+func (r *OrdersRepository) Save(ctx context.Context, order *domain.Order) error {
+	query := `
+		INSERT INTO orders (id, item, category, currency, price, quantity)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
+
+	_, err := r.db.Exec(ctx, query,
+		order.Id,
+		order.Item,
+		order.Category,
+		order.Currency,
+		order.Price,
+		order.Quantity,
+	)
+
+	return err
 }
 
-func (r *OrdersRepository) Get(id string) (*domain.Order, bool) {
-	r.mu.RLock()
-	defer r.mu.Unlock()
-	order, ok := r.orders[id]
-	return order, ok
-}
+func (r *OrdersRepository) Get(ctx context.Context, id string) (*domain.Order, bool) {
+	query := `
+		SELECT id, item, category, currency, price, quantity
+		FROM orders
+		WHERE id = $1
+	`
 
-func (r *OrdersRepository) Update(order *domain.Order) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	row := r.db.QueryRow(ctx, query, id)
 
-	r.orders[order.Id] = order
-}
+	var order domain.Order
+	err := row.Scan(
+		&order.Id,
+		&order.Item,
+		&order.Category,
+		&order.Currency,
+		&order.Price,
+		&order.Quantity,
+	)
 
-func (r *OrdersRepository) Delete(id string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	delete(r.orders, id)
-}
-
-func (r *OrdersRepository) List() []*domain.Order {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	res := []*domain.Order{}
-	for _, order := range r.orders {
-		res = append(res, order)
+	if err != nil {
+		return nil, false
 	}
-	return res
+
+	return &order, true
+}
+
+func (r *OrdersRepository) Update(ctx context.Context, order *domain.Order) error {
+	query := `
+		UPDATE orders
+		SET item = $1,
+			category = $2,
+			currency = $3,
+			price = $4,
+			quantity = $5
+		WHERE id = $6
+	`
+
+	_, err := r.db.Exec(ctx, query,
+		order.Item,
+		order.Category,
+		order.Currency,
+		order.Price,
+		order.Quantity,
+		order.Id,
+	)
+
+	return err
+}
+
+func (r *OrdersRepository) Delete(ctx context.Context, id string) error {
+	query := `DELETE FROM orders WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, id)
+	return err
+}
+
+func (r *OrdersRepository) List(ctx context.Context) []*domain.Order {
+	query := `
+		SELECT id, item, category, currency, price, quantity
+		FROM orders
+	`
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var orders []*domain.Order
+
+	for rows.Next() {
+		var o domain.Order
+		err := rows.Scan(
+			&o.Id,
+			&o.Item,
+			&o.Category,
+			&o.Currency,
+			&o.Price,
+			&o.Quantity,
+		)
+		if err != nil {
+			return nil
+		}
+		orders = append(orders, &o)
+	}
+
+	return orders
 }
